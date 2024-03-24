@@ -1,0 +1,64 @@
+services:
+  microblog-backend:
+    container_name: microblog-backend
+    build: ./microblog-backend/
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_HTTP_PORT}:${BACKEND_HTTP_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  migrations:
+    image: ghcr.io/kukymbr/goose-docker:3.19.2
+    environment:
+      - GOOSE_DRIVER=postgres
+      - GOOSE_DBSTRING=host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB}
+    volumes:
+      - ./microblog-backend/migrations:/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    container_name: postgres
+    image: postgres:alpine
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 10s
+      retries: 120
+
+  redis:
+    container_name: redis 
+    image: redis:6.0.20-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning
+    volumes: 
+      - redis-data:/data
+
+  #prometheus:
+  #  image: prom/prometheus
+  #  container_name: prometheus
+  #  command:
+  #    - '--config.file=/etc/prometheus/prometheus.yml'
+  #  ports:
+  #    - ${PROMETHEUS_PORT}:${PROMETHEUS_PORT}
+  #  restart: unless-stopped
+  #  volumes:
+  #    - ./prometheus:/etc/prometheus
+  #    - prom-data:/prometheus
+  
+volumes:
+  pg-data:
+  redis-data:
+  prom-data:
