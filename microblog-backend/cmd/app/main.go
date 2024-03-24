@@ -12,6 +12,7 @@ import (
 	"microblog-backend/internal/logger"
 	"microblog-backend/internal/mw/api"
 	"microblog-backend/internal/mw/auth"
+	"microblog-backend/internal/mw/cors"
 	"microblog-backend/internal/repository/credentials"
 	"microblog-backend/internal/repository/session"
 	"microblog-backend/internal/repository/user"
@@ -53,6 +54,7 @@ func main() {
 
 	mux := chi.NewMux()
 	mux.Use(logger.Inject(log))
+	mux.Use(cors.CorsMW)
 	mux.Use(auth.AuthMW)
 	mux.MethodNotAllowed(api.MethodNotAllowed())
 	mux.NotFound(api.NotFound())
